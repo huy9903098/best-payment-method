@@ -12,6 +12,7 @@
   "dependencies": {
     "react": "18.1.0",
     "react-native": "0.70.4",
+    "react-native-awesome-card-io": "^0.9.1",
     "react-native-nfc-manager": "^3.14.0"
   },
   "devDependencies": {

@@ -2,6 +2,7 @@ import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Platform} from 'react-native';
 import NfcManager, {NfcEvents} from 'react-native-nfc-manager';
 import AndroidPrompt from './AndroidPrompt';
+import {CardIOModule} from 'react-native-awesome-card-io';
 
 export default function Game(props) {
   const [start, setStart] = React.useState(null);
@@ -9,31 +10,39 @@ export default function Game(props) {
   const androidPromptRef = React.useRef(); // call React.useRef() to obtain a ref object
 
   React.useEffect(() => {
-    let count = 5;
-    NfcManager.setEventListener(NfcEvents.DiscoverTag, tag => {
-      count--;
+    CardIOModule.scanCard()
+      .then(card => {
+        console.log('scan card');
+      })
+      .catch(() => {
+        // the user cancelled
+      });
+    // let count = 5;
 
-      if (Platform.OS === 'android') {
-        // set hint text for AndroidPrompt
-        androidPromptRef.current.setHintText(`${count}...`);
-      } else {
-        NfcManager.setAlertMessageIOS(`${count}...`);
-      }
+    // NfcManager.setEventListener(NfcEvents.DiscoverTag, tag => {
+    //   count--;
 
-      if (count <= 0) {
-        NfcManager.unregisterTagEvent().catch(() => 0);
-        setDuration(new Date().getTime() - start.getTime());
+    //   if (Platform.OS === 'android') {
+    //     // set hint text for AndroidPrompt
+    //     androidPromptRef.current.setHintText(`${count}...`);
+    //   } else {
+    //     NfcManager.setAlertMessageIOS(`${count}...`);
+    //   }
 
-        if (Platform.OS === 'android') {
-          // hide AndroidPrompt
-          androidPromptRef.current.setVisible(false);
-        }
-      }
-    });
+    //   if (count <= 0) {
+    //     NfcManager.unregisterTagEvent().catch(() => 0);
+    //     setDuration(new Date().getTime() - start.getTime());
 
-    return () => {
-      NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
-    };
+    //     if (Platform.OS === 'android') {
+    //       // hide AndroidPrompt
+    //       androidPromptRef.current.setVisible(false);
+    //     }
+    //   }
+    // });
+
+    // return () => {
+    //   NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
+    // };
   }, [start]);
 
   async function scanTag() {
