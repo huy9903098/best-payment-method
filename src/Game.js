@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Platform} from 'react-native';
-import NfcManager, {NfcEvents} from 'react-native-nfc-manager';
+import NfcManager, {NfcEvents, NfcTech} from 'react-native-nfc-manager';
 import AndroidPrompt from './AndroidPrompt';
 
 export default function Game(props) {
@@ -36,14 +36,27 @@ export default function Game(props) {
     };
   }, [start]);
 
-  async function scanTag() {
-    await NfcManager.registerTagEvent();
-    if (Platform.OS === 'android') {
-      // show AndroidPrompt
-      androidPromptRef.current.setVisible(true);
+  async function readNdef() {
+    try {
+      // register for the NFC tag with NDEF in it
+      let tech = Platform.OS === 'ios' ? NfcTech.MifareIOS : NfcTech.NfcA;
+      let resp = await NfcManager.requestTechnology(tech, {
+        alertMessage: 'Ready to do some custom Mifare cmd!',
+      });
+
+      let cmd =
+        Platform.OS === 'ios'
+          ? NfcManager.sendMifareCommandIOS
+          : NfcManager.transceive;
+
+      resp = await cmd([0x61, 0x18, 0x4f]);
+      console.warn('resp found', resp);
+    } catch (ex) {
+      console.warn('Oops!', ex);
+    } finally {
+      // stop the nfc scanning
+      NfcManager.cancelTechnologyRequest();
     }
-    setStart(new Date());
-    setDuration(0);
   }
 
   return (
@@ -56,7 +69,7 @@ export default function Game(props) {
         )) || <Text style={styles.minLabel}>Let's go!</Text>}
       </View>
 
-      <TouchableOpacity onPress={scanTag}>
+      <TouchableOpacity onPress={readNdef}>
         <View style={styles.btn}>
           <Text style={styles.playLabel}>PLAY!</Text>
         </View>
