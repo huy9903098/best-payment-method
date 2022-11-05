@@ -3,6 +3,7 @@ import {View, Text, StyleSheet, TouchableOpacity, Platform} from 'react-native';
 import NfcManager, {NfcEvents} from 'react-native-nfc-manager';
 import AndroidPrompt from './AndroidPrompt';
 import {CardIOModule} from 'react-native-awesome-card-io';
+import NfcCardReader from 'react-native-nfc-card-reader';
 
 export default function Game(props) {
   const [start, setStart] = React.useState(null);
@@ -10,13 +11,10 @@ export default function Game(props) {
   const androidPromptRef = React.useRef(); // call React.useRef() to obtain a ref object
 
   React.useEffect(() => {
-    CardIOModule.scanCard()
-      .then(card => {
-        console.log('scan card');
-      })
-      .catch(() => {
-        // the user cancelled
-      });
+    NfcCardReader.startNfc(function (cardDetails) {
+      // Card details contain the callback data below, see the options.
+      console.log('scan card');
+    });
     // let count = 5;
 
     // NfcManager.setEventListener(NfcEvents.DiscoverTag, tag => {
