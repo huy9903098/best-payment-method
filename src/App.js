@@ -1,13 +1,19 @@
 import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import NfcManager from 'react-native-nfc-manager';
+import AndroidPrompt from './AndroidPrompt';
+import Game from './Game';
 
 function App() {
   const [hasNfc, setHasNfc] = React.useState(null);
 
   React.useEffect(() => {
     async function checkNfc() {
-      setHasNfc(await NfcManager.isSupported());
+      const supported = await NfcManager.isSupported();
+      if (supported) {
+        await NfcManager.start();
+      }
+      setHasNfc(supported);
     }
 
     checkNfc();
@@ -18,15 +24,12 @@ function App() {
     return (
       <View style={styles.wrapper}>
         <Text> This device doesnt support nfc</Text>
+        <AndroidPrompt />
       </View>
     );
   }
 
-  return (
-    <View style={styles.wrapper}>
-      <Text> Hash nfc</Text>
-    </View>
-  );
+  return <Game />;
 }
 
 const styles = StyleSheet.create({
