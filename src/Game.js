@@ -1,6 +1,9 @@
 import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Platform} from 'react-native';
-import NfcManager, {NfcEvents} from 'react-native-nfc-manager';
+import NFC, {
+  NfcDataType,
+  NdefRecordType,
+} from '@smartractechnology/react-native-rfid-nfc';
 import AndroidPrompt from './AndroidPrompt';
 
 export default function Game(props) {
@@ -9,35 +12,60 @@ export default function Game(props) {
   const androidPromptRef = React.useRef(); // call React.useRef() to obtain a ref object
 
   React.useEffect(() => {
-    let count = 5;
-    NfcManager.setEventListener(NfcEvents.DiscoverTag, tag => {
-      count--;
+    NFC.addListener(payload => {
+      console.log('payload', payload);
+      switch (payload.type) {
+        case NfcDataType.NDEF:
+          let messages = payload.data;
+          for (let i in messages) {
+            let records = messages[i];
+            for (let j in records) {
+              let r = records[j];
+              if (r.type === NdefRecordType.TEXT) {
+                // do something with the text data
+              } else {
+                console.warn(
+                  `Non-TEXT tag of type ${r.type} with data ${r.data}`,
+                );
+              }
+            }
+          }
+          break;
 
-      if (Platform.OS === 'android') {
-        // set hint text for AndroidPrompt
-        androidPromptRef.current.setHintText(`${count}...`);
-      } else {
-        NfcManager.setAlertMessageIOS(`${count}...`);
-      }
-
-      if (count <= 0) {
-        NfcManager.unregisterTagEvent().catch(() => 0);
-        setDuration(new Date().getTime() - start.getTime());
-
-        if (Platform.OS === 'android') {
-          // hide AndroidPrompt
-          androidPromptRef.current.setVisible(false);
-        }
+        case NfcDataType.TAG:
+          console.log('hello');
+          break;
       }
     });
 
-    return () => {
-      NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
-    };
+    // NfcManager.setEventListener(NfcEvents.DiscoverTag, tag => {
+    //   count--;
+
+    //   if (Platform.OS === 'android') {
+    //     // set hint text for AndroidPrompt
+    //     androidPromptRef.current.setHintText(`${count}...`);
+    //   } else {
+    //     NfcManager.setAlertMessageIOS(`${count}...`);
+    //   }
+
+    //   if (count <= 0) {
+    //     NfcManager.unregisterTagEvent().catch(() => 0);
+    //     setDuration(new Date().getTime() - start.getTime());
+
+    //     if (Platform.OS === 'android') {
+    //       // hide AndroidPrompt
+    //       androidPromptRef.current.setVisible(false);
+    //     }
+    //   }
+    // });
+
+    // return () => {
+    //   NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
+    // };
   }, [start]);
 
   async function scanTag() {
-    await NfcManager.registerTagEvent();
+    // await NfcManager.registerTagEvent();
     if (Platform.OS === 'android') {
       // show AndroidPrompt
       androidPromptRef.current.setVisible(true);
