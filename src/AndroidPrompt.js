@@ -6,23 +6,85 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 
-export default function AndroidPrompt() {
+function AndroidPrompt(props, ref) {
+  const [_visible, _setVisible] = React.useState(false);
+  const [visible, setVisible] = React.useState(false);
+  const [hintText, setHintText] = React.useState('');
+  const animValue = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (ref) {
+      ref.current = {
+        setVisible: _setVisible, // client codes can only access _visible
+        setHintText,
+      };
+    }
+  }, [ref]);
+
+  React.useEffect(() => {
+    if (_visible) {
+      setVisible(true); // set to visible first, then do transition
+      Animated.timing(animValue, {
+        duration: 300,
+        toValue: 1,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(animValue, {
+        // do transition first, then set to invisible
+        duration: 300,
+        toValue: 0,
+        useNativeDriver: true,
+      }).start(() => {
+        setVisible(false);
+        setHintText('');
+      });
+    }
+  }, [_visible, animValue]); // detect _visible change, use it to drive our animation
+
+  const backdropAnimStyle = {
+    opacity: animValue,
+  };
+
+  const promptAnimStyle = {
+    transform: [
+      {
+        translateY: animValue.interpolate({
+          // for the slide-up effect
+          inputRange: [0, 1],
+          outputRange: [500, 0],
+        }),
+      },
+    ],
+  };
+
   return (
-    <Modal visible={true} transparent={true}>
+    <Modal visible={visible} transparent={true}>
       <View style={styles.content}>
-        <View style={styles.backdrop} />
-        <View style={styles.prompt}>
-          <Text style={styles.hint}>Hello NFC</Text>
-          <TouchableOpacity style={styles.btn}>
+        <Animated.View
+          style={[styles.backdrop, StyleSheet.absoluteFill, backdropAnimStyle]}
+        />
+
+        <Animated.View style={[styles.prompt, promptAnimStyle]}>
+          <Text style={styles.hint}>{hintText || 'Hello NFC'}</Text>
+
+          <TouchableOpacity
+            style={styles.btn}
+            onPress={() => {
+              _setVisible(false);
+            }}>
             <Text>CANCEL</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
 }
+
+// omit the styling codes
 
 const styles = StyleSheet.create({
   content: {
@@ -54,3 +116,5 @@ const styles = StyleSheet.create({
     padding: 15,
   },
 });
+
+export default React.forwardRef(AndroidPrompt); // wrap component with forwardRef

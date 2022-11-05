@@ -1,19 +1,68 @@
 import React from 'react';
-import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
-import nfcManager, {NfcEvents} from 'react-native-nfc-manager';
+import {View, Text, StyleSheet, TouchableOpacity, Platform} from 'react-native';
+import NfcManager, {NfcEvents} from 'react-native-nfc-manager';
+import AndroidPrompt from './AndroidPrompt';
 
-export default function Game() {
-  async function scanTag() {
-    nfcManager.setEventListener(NfcEvents.DiscoverTag, tag => {
-      console.warn('tag found', tag);
+export default function Game(props) {
+  const [start, setStart] = React.useState(null);
+  const [duration, setDuration] = React.useState(0);
+  const androidPromptRef = React.useRef(); // call React.useRef() to obtain a ref object
+
+  React.useEffect(() => {
+    let count = 5;
+    NfcManager.setEventListener(NfcEvents.DiscoverTag, tag => {
+      count--;
+
+      if (Platform.OS === 'android') {
+        // set hint text for AndroidPrompt
+        androidPromptRef.current.setHintText(`${count}...`);
+      } else {
+        NfcManager.setAlertMessageIOS(`${count}...`);
+      }
+
+      if (count <= 0) {
+        NfcManager.unregisterTagEvent().catch(() => 0);
+        setDuration(new Date().getTime() - start.getTime());
+
+        if (Platform.OS === 'android') {
+          // hide AndroidPrompt
+          androidPromptRef.current.setVisible(false);
+        }
+      }
     });
+
+    return () => {
+      NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
+    };
+  }, [start]);
+
+  async function scanTag() {
+    await NfcManager.registerTagEvent();
+    if (Platform.OS === 'android') {
+      // show AndroidPrompt
+      androidPromptRef.current.setVisible(true);
+    }
+    setStart(new Date());
+    setDuration(0);
   }
+
   return (
     <View style={styles.wrapper}>
-      <Text>NFC Game</Text>
-      <TouchableOpacity style={styles.btn} onPress={scanTag}>
-        <Text>START</Text>
+      <Text style={styles.label}>NFC Game</Text>
+
+      <View style={styles.content}>
+        {(duration > 0 && (
+          <Text style={styles.minLabel}>{duration} ms</Text>
+        )) || <Text style={styles.minLabel}>Let's go!</Text>}
+      </View>
+
+      <TouchableOpacity onPress={scanTag}>
+        <View style={styles.btn}>
+          <Text style={styles.playLabel}>PLAY!</Text>
+        </View>
       </TouchableOpacity>
+
+      <AndroidPrompt ref={androidPromptRef} />
     </View>
   );
 }
